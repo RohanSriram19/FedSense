@@ -14,11 +14,11 @@ COPY postcss.config.js ./
 # Install dependencies
 RUN npm ci --only=production
 
-# Copy source code
-COPY src/ ./src/
-COPY public/ ./public/
-
-# Build application
+    # Copy source code
+    COPY src/ ./src/
+    COPY public/ ./public/
+    
+    # Build application
 RUN npm run build
 
 # Production stage

@@ -40,7 +40,7 @@ services:
   mlflow:
     image: python:3.11-slim
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       - MLFLOW_BACKEND_STORE_URI=postgresql://mlflow:mlflow@postgres:5432/mlflow
       - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlruns
