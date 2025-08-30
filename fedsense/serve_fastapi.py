@@ -478,10 +478,11 @@ def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
 
 if __name__ == "__main__":
     import argparse
+    import os
     
     parser = argparse.ArgumentParser(description="FedSense FastAPI Server")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)), help="Port to bind to")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
     
     args = parser.parse_args()
