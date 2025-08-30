@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # FedSense Backend API
+  fedsense-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - TRITON_URL=http://triton:8001
+    depends_on:
+      - mlflow
+      - postgres
+    networks:
+      - fedsense-network
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+
+  # FedSense Frontend Dashboard
+  fedsense-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://fedsense-api:8000
+      - NODE_ENV=production
+    depends_on:
+      - fedsense-api
+    networks:
+      - fedsense-network
+
+  # MLflow Tracking Server
+  mlflow:
+    image: python:3.11-slim
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://mlflow:mlflow@postgres:5432/mlflow
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlruns
+    volumes:
+      - mlflow_artifacts:/mlruns
+      - ./docker/mlflow/requirements.txt:/requirements.txt
+    command: >
+      bash -c "
+        pip install -r /requirements.txt &&
+        mlflow server 
+          --host 0.0.0.0 
+          --port 5000 
+          --backend-store-uri postgresql://mlflow:mlflow@postgres:5432/mlflow
+          --default-artifact-root /mlruns
+      "
+    depends_on:
+      - postgres
+    networks:
+      - fedsense-network
+
+  # PostgreSQL for MLflow
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=mlflow
+      - POSTGRES_PASSWORD=mlflow
+      - POSTGRES_DB=mlflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fedsense-network
+
+  # Triton Inference Server
+  triton:
+    image: nvcr.io/nvidia/tritonserver:23.10-py3
+    ports:
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./models/triton:/models
+    command: tritonserver --model-repository=/models --allow-http --allow-grpc
+    networks:
+      - fedsense-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - fedsense-frontend
+      - fedsense-api
+    networks:
+      - fedsense-network
+
+networks:
+  fedsense-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  mlflow_artifacts:

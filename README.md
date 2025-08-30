@@ -43,6 +43,32 @@ Visit:
 
 *Results on synthetic wearable data (50k samples, 5% anomaly rate)*
 
+## 🚀 Deployment Options
+
+### 🐳 Docker Compose (Recommended)
+```bash
+# Production deployment with all services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Access services
+open http://localhost:3000  # Frontend Dashboard
+open http://localhost:8000  # Backend API
+open http://localhost:5000  # MLflow Tracking
+```
+
+### ☁️ Cloud Deployment
+- **AWS**: ECS, App Runner, EC2 with Auto Scaling
+- **GCP**: Cloud Run, GKE, Compute Engine
+- **Azure**: Container Instances, AKS, App Service  
+- **Kubernetes**: Any K8s cluster with provided manifests
+
+### 🔧 CI/CD Pipeline
+- **GitHub Actions**: Automated testing, building, and deployment
+- **Container Registry**: GitHub Container Registry (GHCR)
+- **Security**: Vulnerability scanning, dependency updates
+
+📖 **Complete deployment guide**: [DEPLOYMENT.md](DEPLOYMENT.md)
+
 ## 🏗️ Architecture
 
 FedSense implements a complete federated learning pipeline:
