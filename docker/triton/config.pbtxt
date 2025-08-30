@@ -1,0 +1,42 @@
+name: "fedsense_anomaly"
+backend: "onnxruntime"
+max_batch_size: 8
+version_policy { all { } }
+
+input [
+  {
+    name: "input"
+    data_type: TYPE_FP32
+    dims: [250, 4]
+  }
+]
+
+output [
+  {
+    name: "output"
+    data_type: TYPE_FP32
+    dims: [1]
+  }
+]
+
+instance_group [
+  {
+    count: 1
+    kind: KIND_CPU
+  }
+]
+
+model_warmup [
+  {
+    name: "anomaly_detection_warmup"
+    batch_size: 1
+    inputs: {
+      key: "input"
+      value: {
+        data_type: TYPE_FP32
+        dims: [250, 4]
+        zero_data: true
+      }
+    }
+  }
+]
