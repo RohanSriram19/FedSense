@@ -9,31 +9,30 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Copy project files
 COPY pyproject.toml README.md ./
 COPY fedsense/ ./fedsense/
 
-# Install Python dependencies - simplified versions to avoid conflicts
+# Install Python dependencies - core ML stack only
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Install the package and core dependencies (avoiding version conflicts)
+# Install the package and essential dependencies only
 RUN pip install --no-cache-dir -e . && \
     pip install --no-cache-dir \
     uvicorn[standard] \
     gunicorn \
+    fastapi \
+    pydantic \
+    httpx \
     jax[cpu] \
     flax \
     flwr \
-    fastapi \
     pandas \
     numpy \
-    scikit-learn \
-    matplotlib \
-    seaborn \
-    pydantic \
-    httpx
+    scikit-learn
 
 # Create necessary directories
 RUN mkdir -p models data logs
@@ -41,5 +40,5 @@ RUN mkdir -p models data logs
 # Expose port (Railway will set PORT env var)
 EXPOSE $PORT
 
-# Start command - Railway sets PORT automatically
+# Start command - Railway sets PORT automatically  
 CMD ["sh", "-c", "python -m fedsense.serve_fastapi --host 0.0.0.0 --port ${PORT:-8000}"]
