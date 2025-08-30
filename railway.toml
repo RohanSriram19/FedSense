@@ -1,0 +1,6 @@
+# Railway uses nixpacks by default, but we want to use our custom Dockerfile
+# This file tells Railway to use our optimized Dockerfile.railway
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.railway"
