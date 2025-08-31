@@ -1,26 +1,21 @@
-# Railway-optimized Dockerfile for FedSense Backend
-FROM python:3.11-slim
+# Multi-stage build to reduce final image size while keeping all ML dependencies
+FROM python:3.11-slim as builder
 
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies required for ML libraries
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy project files
+WORKDIR /app
+
+# Copy and install Python dependencies
 COPY pyproject.toml README.md ./
 COPY fedsense/ ./fedsense/
 
-# Install Python dependencies - core ML stack only
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-
-# Install the package and essential dependencies only
-RUN pip install --no-cache-dir -e . && \
+# Install all ML dependencies in builder stage
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -e . && \
     pip install --no-cache-dir \
     uvicorn[standard] \
     gunicorn \
@@ -32,13 +27,34 @@ RUN pip install --no-cache-dir -e . && \
     flwr \
     pandas \
     numpy \
-    scikit-learn
+    scikit-learn \
+    matplotlib \
+    seaborn
+
+# Production stage - smaller final image
+FROM python:3.11-slim
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+WORKDIR /app
+
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY fedsense/ ./fedsense/
+COPY pyproject.toml README.md ./
 
 # Create necessary directories
 RUN mkdir -p models data logs
 
-# Expose port (Railway will set PORT env var)
+# Expose port
 EXPOSE $PORT
 
-# Start command - Railway sets PORT automatically  
+# Start with full ML capabilities
 CMD ["sh", "-c", "python -m fedsense.serve_fastapi --host 0.0.0.0 --port ${PORT:-8000}"]

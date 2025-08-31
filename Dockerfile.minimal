@@ -1,0 +1,29 @@
+# Minimal Railway deployment - Core API only
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install minimal system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy minimal requirements
+COPY fedsense/__init__.py fedsense/
+COPY fedsense/config.py fedsense/
+COPY fedsense/serve_fastapi.py fedsense/
+COPY fedsense/utils_logging.py fedsense/
+
+# Install minimal Python dependencies for API only
+RUN pip install --no-cache-dir \
+    fastapi==0.104.1 \
+    uvicorn[standard]==0.24.0 \
+    pydantic==2.5.0 \
+    httpx==0.25.2
+
+# Expose port
+EXPOSE 8000
+
+# Start command
+CMD ["uvicorn", "fedsense.serve_fastapi:app", "--host", "0.0.0.0", "--port", "8000"]
